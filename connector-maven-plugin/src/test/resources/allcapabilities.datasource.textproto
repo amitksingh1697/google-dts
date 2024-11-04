@@ -1,0 +1,22 @@
+# proto-file: connector-internal/connector.proto
+# proto-message: Connector
+
+className: "com.google.cloud.connector.maven.sources.AllCapabilitiesDataSource"
+config {
+  type: MULTI_PARAMS
+}
+dataSource {
+  name: "datasources/AllCapabilitiesDataSource"
+  id: "AllCapabilitiesDataSource"
+  capabilities: SUPPORTS_NATIVE_QUERIES
+  capabilities: SUPPORTS_SOURCE_NESTING
+  capabilities: SUPPORTS_PARALLEL_QUERIES
+  capabilities: SUPPORTS_SYNCHRONOUS_QUERIES
+  capabilities: SUPPORTS_LIMIT
+  capabilities: SUPPORTS_OFFSET
+  capabilities: SUPPORTS_SORTING
+  capabilities: SUPPORTS_TYPE_CAST
+  capabilities: SUPPORTS_JOIN
+  capabilities: SUPPORTS_FILTER
+  capabilities: SUPPORTS_COMPUTE
+}

@@ -1,0 +1,31 @@
+# proto-file: connector-internal/connector.proto
+# proto-message: Connector
+
+className: "com.google.cloud.connector.maven.sources.DummyRecordConfigDataSource"
+config {
+  type: CUSTOM_CLASS
+  className: "com.google.cloud.connector.maven.sources.DummyRecordConfig"
+}
+dataSource {
+  name: "datasources/dummy"
+  id: "dummy"
+  capabilities: SUPPORTS_SYNCHRONOUS_QUERIES
+  parameters {
+    name: "datasources/dummy/parameters/host"
+    id: "host"
+    type {
+      type_kind: STRING
+    }
+  }
+  parameters {
+    name: "datasources/dummy/parameters/port"
+    id: "port"
+    type {
+      type_kind: INT32
+    }
+  }
+  max_staleness {
+    seconds: 7200
+    nanos: 100000000
+  }
+}

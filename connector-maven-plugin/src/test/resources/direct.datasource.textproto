@@ -1,0 +1,26 @@
+# proto-file: connector-internal/connector.proto
+# proto-message: Connector
+
+className: "com.google.cloud.connector.maven.sources.DirectConfigDataSource"
+config {
+  type: MULTI_PARAMS
+}
+dataSource {
+  name: "datasources/DirectConfigDataSource"
+  id: "DirectConfigDataSource"
+  capabilities: SUPPORTS_SYNCHRONOUS_QUERIES
+  parameters {
+    name: "datasources/DirectConfigDataSource/parameters/source"
+    id: "source"
+    type {
+      type_kind: STRING
+    }
+  }
+  parameters {
+    name: "datasources/DirectConfigDataSource/parameters/threshold"
+    id: "threshold"
+    type {
+      type_kind: DOUBLE 
+    }
+  }
+}

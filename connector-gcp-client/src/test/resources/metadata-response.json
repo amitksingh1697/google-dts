@@ -1,0 +1,11 @@
+{
+  "/computeMetadata/": "v1/",
+  "/computeMetadata/v1/project/project-id": "test-project",
+  "/computeMetadata/v1/project/numeric-project-id": "1234567890",
+  "/computeMetadata/v1/instance/hostname": "test.test-project.internal",
+  "/computeMetadata/v1/instance/name": "test-instance-name-with-special$?chars@(@and-longer-than-sixty-three-chars-with-trailing-hyphens----",
+  "/computeMetadata/v1/instance/zone": "projects/1234567890/zones/us-west1-a",
+  "/computeMetadata/v1/instance/network-interfaces/0/ip": "192.168.1.1",
+  "/computeMetadata/v1/instance/network-interfaces/0/ipv6s": "2600:2d00:4230:9531:a80:12:0:0",
+  "/computeMetadata/v1/instance/network-interfaces/0/network": "projects/1234567890/networks/default"
+}
