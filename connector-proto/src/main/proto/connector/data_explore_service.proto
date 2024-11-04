@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package com.google.cloud.connector.api;
+
+import "connector/v1alpha1/query.proto";
+import "google/protobuf/struct.proto";
+
+option java_package = "com.google.cloud.connector.api";
+option java_multiple_files = true;
+option java_outer_classname = "DataExploreServiceProto";
+
+/**
+ * Service used for design time data exploration in BigQuery
+ */
+service DataExploreService {
+  // Browses the data source to retrieve all child resources in a given parent
+  // dataset.
+  rpc Browse(BrowseRequest) returns (BrowseResponse);
+}
+
+// A browsing request to list all child resources of a parent asset.
+message BrowseRequest {
+  // The parent asset to browse. If only data source is provided, the request
+  // will browse from root level
+  BrowseAsset asset = 1;
+
+  // Datasource specific parameters required to connect to the data source.
+  // The parameters must be consistent with those declared by the connector.
+  .google.protobuf.Struct parameters = 2;
+}
+
+// A browsing response that contains a list of child asset entities.
+message BrowseResponse {
+  // A list of child assets under the parent dataset.
+  repeated BrowseAsset assets = 1;
+
+  // The parent asset that was browsed. This should be the same as that
+  // in the browsing request.
+  BrowseAsset parent_asset = 2;
+}
+
+// Represents a single asset in a browsing response.
+message BrowseAsset {
+  // The representation of the asset in the form of
+  // datasources/{datasource}/{collection-id1}/{resource-id1}/...
+  // This dataset should be directly usable without any transformation by the
+  // caller to perform recursive browsing if this asset entity has any child
+  // (i.e., a non-leave node in resource hierarchy declared by the datasource)
+  string dataset = 1;
+
+  // Specifies a table or a raw query to determine the schema of.
+  oneof source {
+    // The name of a table, unique within the dataset.
+    string table = 4;
+
+    // Named Table, used for supported custom namespacing rules. This table
+    // can be partial if the asset is not leaf level
+    .google.cloud.bigquery.federation.v1alpha1.NamedTable named_table = 5;
+  }
+
+  // The display name for this asset.
+  string display_name = 2;
+
+  // Indicates if this asset is a leaf level asset. If not, caller should be
+  // able to issue another browse request on this asset to get a list of its
+  // child assets.
+  bool leaf_level = 3;
+}

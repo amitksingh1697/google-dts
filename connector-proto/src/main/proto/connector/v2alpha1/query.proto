@@ -1,0 +1,127 @@
+// (-- api-linter: core::0127::http-annotation=disabled
+//     aip.dev/not-precedent: This is not a Google API. --)
+// (-- api-linter: core::0123::resource-annotation=disabled
+//     aip.dev/not-precedent: This is not a Google API. --)
+
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v2alpha1;
+
+import "connector/v2alpha1/expression.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/wrappers.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v2alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "FederationQueryProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V2Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V2alpha1";
+option objc_class_prefix = "GCBQFV2A1";
+
+// NEXT ID: 13
+// Data Query.
+message DataQuery {
+  // Defines a single field of the DataQuery result.
+  message ComputeElement {
+    // An alias by which the element can be referenced in the outer
+    // query. If missing, it can be derived from the expression.
+    // (-- api-linter: core::0122::name-suffix=disabled
+    //     aip.dev/not-precedent: keeping consistency with the rest of the file
+    //     for now. --)
+    string field_name = 1;
+    // Defines how the value is evaluated.
+    Expression expression = 3 [(google.api.field_behavior) = REQUIRED];
+    // The Variable id by which the element can be referenced in the outer
+    // query plan.
+    optional int32 field_id = 4;
+  }
+  // A wrapper message that allows us to distingush a situation when compute is
+  // missing from a situation when compute is present, but no columns projected.
+  message Compute {
+    // Final compute. Expressions may contain aggregate functions. If they do,
+    // the query is assumed to be an aggregation query with an implied GROUP BY
+    // on the remaining fields.
+    repeated ComputeElement elements = 1;
+  }
+  reserved 1;
+  reserved "compute_elements";
+  // Final compute.
+  Compute compute = 11;
+  // Group by keys for aggregation.
+  // For backward-compatibility, the non-aggregated columns in the `compute`
+  // will be considered as `group by` keys implicitly if `grouping_keys` is
+  // missing.
+  Compute grouping_keys = 12;
+  // Pre aggregation filter expression to apply before returning data.
+  Expression filter_predicate = 2;
+  // Post aggregation expression to apply before returning data.
+  Expression having_predicate = 3;
+  // Number of rows to return.
+  google.protobuf.Int64Value limit = 4;
+  // Data offset. Typically makes sense only if data source does not support
+  // partitioning into datalets.
+  google.protobuf.Int64Value offset = 5;
+  // Sorting settings
+  message Sorting {
+    // Data sorting order.
+    enum SortingOrder {
+      // Undefined sorting order.
+      SORTING_ORDER_UNSPECIFIED = 0;
+      // Ascending sorting order.
+      ASCENDING = 1;
+      // Descending sorting order.
+      DESCENDING = 2;
+    }
+    // Field by which data should be ordered. This must be an alias
+    // specified in "fields" field.
+    string field_name = 1;
+    // Data sorting order.
+    SortingOrder sorting_order = 2;
+  }
+  // Sorting settings.
+  repeated Sorting sorting = 6;
+
+  // Specifies a datasource to be queried.
+  // This field does not have to be set if a datasource contains just one table.
+  // In this case this one table will be used for querying.
+  oneof source {
+    // A name of a table to be queried.
+    string table = 7;
+    // The arbitrary query that is directly sent to the underlying datasource.
+    // See also the capability SUPPORTS_NATIVE_QUERIES
+    string native_query = 8;
+    // See also the capability SUPPORTS_SOURCE_NESTING
+    DataQuery subquery = 9;
+    // See also the capability SUPPORTS_JOIN
+    JoinOperator join = 10;
+  }
+}
+
+// NEXT ID: 6
+// Join operator.
+message JoinOperator {
+  // Join type.
+  enum Type {
+    // Unspecified join type.
+    TYPE_UNSPECIFIED = 0;
+    // For now, inner / left-outer / full-outer joins are supported. This is in
+    // line with the supported join-types in Lego:
+    // https://source.corp.google.com/piper///depot/google3/analytics/lego/storage/proto/datasource_config_entity.proto;rcl=374325138;l=1806
+    // Inner join.
+    INNER = 1;
+    // Left outer join.
+    LEFT = 2;
+    // Full outer join.
+    FULL = 3;
+  }
+  // Join type.
+  Type type = 1;
+
+  // Left child corresponds to input(0)
+  DataQuery left = 2;
+  // Right child corresponds to input(1)
+  DataQuery right = 3;
+
+  // Join condition expressions.
+  Expression predicate = 4;
+}

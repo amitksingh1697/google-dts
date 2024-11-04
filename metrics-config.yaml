@@ -1,0 +1,64 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "ucp-agent:4317"
+
+exporters:
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+  servicecontrol:
+    service_name: $CONNECTOR_SERVICE_API
+    consumer_project: $TENANT_PROJECT
+    service_config_id: $CONNECTOR_SERVICE_CONFIG_ID
+    service_control_endpoint: $SERVICE_CONTROL_ENDPOINT
+
+processors:
+  # Built-in processor that handles conversion from cumulative to delta metric
+  cumulativetodelta:
+    include:
+      metrics:
+        - rows_read_count
+        - bytes_read_count
+      match_type: strict
+  transform/timestamp:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(start_time_unix_nano, start_time_unix_nano + 1000) where IsMatch(metric.name, ".*_read_count")
+          - set(start_time_unix_nano, time_unix_nano) where IsMatch(metric.name, "throughput_count")
+  transform/attributes:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(resource.attributes["resource_container"], "$TENANT_PROJECT")
+          - set(resource.attributes["location"], "$LOCATION")
+          - set(resource.attributes["producer_project"], "$PRODUCER_PROJECT")
+          - set(resource.attributes["instance_uid"], "$INSTANCE_UID")
+          - set(resource.attributes["datasource_id"], attributes["datasource_id"])
+          - delete_key(attributes, "datasource_id")
+          - delete_key(resource.attributes, "service.name")
+          - delete_key(resource.attributes, "telemetry.sdk.language")
+          - delete_key(resource.attributes, "telemetry.sdk.version")
+          - delete_key(resource.attributes, "telemetry.sdk.name")
+  transform/rename_metric:
+    metric_statements:
+      - context: metric
+        statements:
+          - replace_pattern(name, ".*", Concat(["connectorservice-pa.googleapis.com/internal/connectorserver/", name], ""))
+extensions:
+  health_check:
+  pprof:
+
+service:
+  telemetry:
+    logs:
+      level: error
+      disable_stacktrace: true
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [cumulativetodelta, transform/timestamp, transform/rename_metric, transform/attributes]
+      exporters: [servicecontrol]

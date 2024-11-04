@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v1alpha1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/datetime.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v1alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "TypesProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V1Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V1alpha1";
+option objc_class_prefix = "GCBQFV1A1";
+
+// Represents BI data type.
+message Type {
+  // Type kind.
+  TypeKind type_kind = 1;
+  // Sub type.
+  oneof sub_type {
+    // Array type.
+    ArrayType array_type = 2;
+    // Struct type.
+    StructType struct_type = 3;
+  }
+}
+
+// Represents metadata of the structure field.
+message StructField {
+  // Name of the structure field.
+  string field_name = 1;
+  // Type of the structure field.
+  Type field_type = 2;
+  // Description of the structure field.
+  string field_description = 3;
+}
+
+// Represents structure type.
+message StructType {
+  // Fields of the structure.
+  repeated StructField fields = 1;
+}
+
+// Represents array type.
+message ArrayType {
+  // Type of the array element.
+  Type element_type = 1;
+}
+
+// Represents a single value returned by BI engine.
+// (--Based on googlesql.ValueProto and google.protobuf.Struct.
+// Maps to JSON based on go/api-json --).
+message Value {
+  // Each non-null value will have exactly one of these fields specified.
+  // Null values will have no fields set.
+  oneof value {
+    // Represents if the value is null.
+    google.protobuf.NullValue null_value = 1;
+    // Represents BOOLEAN values. Maps to JSON "boolean".
+    bool bool_value = 3;
+    // Represents UINT32 values. Maps to JSON "number".
+    uint32 uint32_value = 19;
+    // Represents UINT64 values. Maps to JSON "string".
+    uint64 uint64_value = 20;
+    // Represents INT32 values. Maps to JSON "number".
+    int32 int32_value = 18;
+    // Represents INT64 values. Maps to JSON "string"
+    int64 int64_value = 2;
+    // Represents FLOAT values. Maps to JSON "number".
+    float float_value = 21;
+    // Represents DOUBLE values. Maps to JSON "number".
+    double double_value = 4;
+    // Represents NUMERIC values.
+    string numeric_value = 14;
+    // Represents BIGNUMERIC values.
+    string bignumeric_value = 15;
+    // Represents STRING values.
+    // Maps to JSON "string".
+    string string_value = 5;
+    // Represents TYPE_BYTES values. Maps to JSON "string" (base64 encoding).
+    bytes bytes_value = 6;
+    // Represents DATE values. Date values should be encoded as number of days
+    // since Unix epoch (1-Jan-1970).
+    int32 date_value = 8;
+    // Represents DATETIME values. BI always interprets values in UTC timezone.
+    // Neither timezone nor utc offset should be set.
+    google.type.DateTime datetime_value = 7;
+    // Represents TIMESTAMP values. Maps to JSON "string" (RFC 3339
+    // encoding).
+    google.protobuf.Timestamp timestamp_value = 10;
+    // Represents Civil time values. Encoded as string
+    // HH:mm:ss.ssssss
+    string time_value = 9;
+    // Represents INTERVAL values.
+    string interval_value = 16;
+    // Represents ENUM values. Maps to JSON "number".
+    int32 enum_value = 22;
+    // Represents ARRAY values.
+    ArrayValue array_value = 11;
+    // Represents STRUCT values.
+    StructValue struct_value = 12;
+    // Represents PROTO values. Maps to JSON "string" (base64 encoding).
+    bytes proto_value = 23;
+    // Represents GEOGRAPHY values.
+    string geography_value = 13;
+    // Represents JSON values. Encoded as escaped JSON strings.
+    string json_value = 17;
+  }
+}
+
+// Represents a GoogleSQL struct value.  The JSON representation is "array".
+message StructValue {
+  // Ordered list of dynamically typed values. The order of fields match
+  // StructType defined above. StructType defines field name and type
+  // for the corresponding values.
+  repeated Value fields = 1;
+}
+
+// An ordered collection of elements. The JSON representation is "array".
+message ArrayValue {
+  // Array elements.
+  repeated Value elements = 1;
+}
+
+// Type kind.
+enum TypeKind {
+  // Unspecified type kind.
+  TYPE_KIND_UNKNOWN = 0;
+  // 2-valued. Encoded as JSON `true` or `false`
+  BOOL = 4;
+   UINT32 = 18;
+  // 64-bit unsigned.
+  UINT64 = 19;
+  // 32-bit signed.
+  INT32 = 17;
+  // 64-bit signed. Encoded as `string`, in decimal format.
+  INT64 = 2;
+  // 32-bit IEEE floating point. Encoded as `number`, or the strings `"NaN"`,
+  // `"Infinity"`, or `"-Infinity"`
+  FLOAT = 20;
+  // 64-bit IEEE floating point. Encoded as `number`, or the strings `"NaN"`,
+  // `"Infinity"`, or `"-Infinity"`
+  DOUBLE = 3;
+  // Numeric.
+  NUMERIC = 13;
+  // Bignumeric.
+  BIGNUMERIC = 14;
+  // String, UTF8 encoded.
+  STRING = 1;
+  // Bytes. Encoded as a base64-encoded `string`, as described in RFC 4648,
+  // section 4.
+  BYTES = 7;
+  // Civil date - Year, Month, Day. Encoded as number of days
+  // since since Unix epoch (1-Jan-1970).
+  DATE = 5;
+  // Combination of civil date and civil time
+  // (Hour, Minute, Second, Microseconds). Encoded as `google.type.DateTime`.
+  DATETIME = 6;
+  // Timestamp. Encoded as `google.protobuf.Timestamp`.
+  TIMESTAMP = 8;
+  // Civil time (Hour, Minute, Second, Microseconds). Encoded as `string`.
+  TIME = 9;
+  // Interval.
+  INTERVAL = 15;
+  // Array type. Encoded as `array` in json.
+  ARRAY = 10;
+  // Struct type. Encoded as `array` in json.
+  STRUCT = 11;
+  // Geography type.
+  GEOGRAPHY = 12;
+  // JSON.
+  JSON = 16;
+}

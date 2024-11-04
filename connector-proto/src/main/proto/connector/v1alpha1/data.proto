@@ -1,0 +1,65 @@
+// (-- api-linter: core::0127::http-annotation=disabled
+//     aip.dev/not-precedent: This is not a Google API. --)
+// (-- api-linter: core::0123::resource-annotation=disabled
+//     aip.dev/not-precedent: This is not a Google API. --)
+
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v1alpha1;
+
+import "connector/v1alpha1/query.proto";
+import "connector/v1alpha1/schema.proto";
+import "connector/v1alpha1/types.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v1alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "FederationDataProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V1Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V1alpha1";
+option objc_class_prefix = "GCBQFV1A1";
+
+// Represents a block of a result stream.
+// NEXT ID: 9;
+message Data {
+  // Schema of the data. This field is present only in the first message of
+  // the result stream.
+  Schema schema = 1;
+
+  // The ID of the result set that the rowset belongs to. Present (only)
+  // in the first message of the result stream.
+  bytes resultset_id = 5;
+
+  // The ID of the result stream that the rowset belongs do.
+  // Present (only) in the first message of the result stream.
+  bytes stream_id = 6;
+
+  // Present (only) in the first message of the result stream.
+  // If non-empty, a Data Query that should be executed by the calling engine
+  // on top of the returned result set in order to receive the data as
+  // originally requested.
+  // Intended for data sources that support push down only under certain
+  // conditions that cannot be validated until the exact query is known.
+  DataQuery data_query = 2;
+
+  // RowSet with the data.
+  message RowSet {
+    // Data rows.
+    repeated StructValue rows = 1;
+  }
+  // Data rows field, which will be replaced by the `data_block` field.
+  RowSet rowset = 3 [lazy = true];
+
+  // DataBlock with the data.
+  message DataBlock {
+    oneof data_block {
+      // RowSet, row based data.
+      RowSet rowset = 1;
+    }
+  }
+  // The DataBlock to store one type of the possible data output of
+  // `ResultStream`.
+  DataBlock data_block = 4;
+
+  // Size of the data block, in bytes, as read from the underlying data source.
+  int64 data_size_bytes = 7;
+}

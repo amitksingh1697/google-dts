@@ -1,0 +1,307 @@
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v2alpha1;
+
+import "google/protobuf/struct.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v2alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "ConfigManifestProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V2Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V2alpha1";
+option objc_class_prefix = "GCBQFV2A1";
+
+// Manifest describing various modes and configurations supported by a
+// connector. It consists of both predefined modes which have explicit protos
+// defined in data_source_config.proto and generic fallback modes which can be
+// used if none of existing predefined parameters covers concrete data source
+// scenario. New predefined parameters and modes should be introduced for
+// well-defined cases which are shared by multiple connectors.
+message DataSourceConfigManifest {
+  // Default display name for data source (used if no I18N data is available)
+  string default_display_name = 1;
+  // Default description for data source (used if no I18N data is available)
+  string default_description = 2;
+  // Connection configuration manifest
+  Connection connection = 3;
+  // Data configuration manifest
+  Data data = 4;
+  // Query configuration manifest
+  Query query = 5;
+
+  // LINT.IfChange(connection)
+  // Connection configuration manifest - see DataSourceConfig.Connection
+  message Connection {
+    // Endpoint configuration
+    Endpoint endpoint = 1;
+    // Authentication configuration
+    Authentication authentication = 2;
+    // Security configuration
+    Security security = 3;
+    // Network configuration
+    Network network = 4;
+    // Other non-categorized configuration
+    Options options = 5;
+  }
+
+  // Specifies various endpoint configuration modes supported by a connector -
+  // see DataSourceConfig.Connection.Endpoint
+  message Endpoint {
+    // Endpoint configuration mode
+    enum Mode {
+      // Unspecified
+      MODE_UNSPECIFIED = 0;
+      // Full URI - see DataSourceConfig.Connection.Endpoint.uri
+      URI = 1;
+      // Hostname/ip + port - see
+      // DataSourceConfig.Connection.Endpoint.socket_address
+      SOCKET_ADDRESS = 2;
+      // hostname/ip + port + database (if database is a required connection
+      // parameter) - see DataSourceConfig.Connection.Endpoint.database_address
+      DATABASE_ADDRESS = 3;
+
+      // Indicates that custom generic definition is supported - requires
+      // specification of `generic_definition`
+      GENERIC = 9999;
+    }
+    // List of supported endpoint configuration modes
+    repeated Mode supported_modes = 1;
+    // Generic endpoint definition if none of standard modes apply.
+    // `supported_modes` must include `Mode.GENERIC`
+    GenericDefinition generic_definition = 2;
+  }
+
+  // Specifies various authentication modes supported by a connector - see
+  // DataSourceConfig.Connection.Authentication
+  message Authentication {
+    // Authentication mode
+    enum Mode {
+      // Unspecified
+      MODE_UNSPECIFIED = 0;
+      // username + password  - see
+      // DataSourceConfig.Connection.Authentication.username_and_password
+      USERNAME_AND_PASSWORD = 1;
+      // oauth client id + oauth client secret - see
+      // DataSourceConfig.Connection.Authentication.oauth
+      OAUTH = 2;
+
+      // Indicates that custom generic definition is supported - requires
+      // specification of `generic_definition`
+      GENERIC = 9999;
+    }
+    // List of supported authentication modes
+    repeated Mode supported_modes = 1;
+    // Generic authentication definition if none of standard modes apply.
+    // `supported_modes` must include `Mode.GENERIC`
+    GenericDefinition generic_definition = 2;
+  }
+
+  // Specifies security related settings supported by a connector - see
+  // DataSourceConfig.Connection.Security
+  message Security {
+    // Only for uncommon cases
+    repeated GenericParameter parameters = 9999;
+  }
+
+  // Specifies network related settings supported by a connector - see
+  // DataSourceConfig.Connection.Network
+  message Network {
+    // Network mode
+    enum Mode {
+      // Unspecified
+      MODE_UNSPECIFIED = 0;
+      // VPC networking is supported by this Datasource. See
+      // DataSourceConfig.Connection.Network.vpc
+      VPC = 1;
+    }
+    // List of supported network modes
+    repeated Mode supported_modes = 1;
+
+    // Only for uncommon cases
+    repeated GenericParameter parameters = 9999;
+  }
+
+  // Specifies additional connection options which do not fall into any of
+  // standard categories
+  message Options {
+    // Only for uncommon cases
+    repeated GenericParameter parameters = 9999;
+  }
+  // LINT.ThenChange(data_source_config.proto:connection)
+
+  // Data configuration - allows one to specify parameters related to target
+  // data which can be common across multiple queries - for example on "schema"
+  // level (so individual query is only required to specify the child entity
+  // table) - see DataSourceConfig.Data
+  // LINT.IfChange(data)
+  message Data {
+    // Only for uncommon cases
+    repeated GenericParameter parameters = 9999;
+  }
+  // LINT.ThenChange(data_source_config.proto:data)
+
+  // Query configuration - allows one to specify parameterizations that can be
+  // applied on each individual query - see DataSourceConfig.Query
+  // LINT.IfChange(query)
+  message Query {
+    // true if timezone can be configured for query
+    bool default_timezone_supported = 1;
+
+    // Only for uncommon cases
+    repeated GenericParameter parameters = 9999;
+  }
+  // LINT.ThenChange(data_source_config.proto:query)
+
+  // LINT.IfChange(generic)
+  // Generic structure used to define configuration parameters for non-standard
+  // modes - see DataSourceConfig.GenericParameterValues
+  message GenericDefinition {
+    // Identifier of generic definition
+    string definition_id = 1;
+    // Default display name for definition (used if no I18N data is available)
+    string default_display_name = 2;
+    // Supported generic parameters
+    repeated GenericParameter parameters = 3;
+  }
+
+  // Generic parameter definition - see DataSourceConfig.ParameterValue. Meant
+  // to be used for non-standardised cases - i.e. fallback for unique cases
+  // which cannot be covered by standardised protos shared by multiple
+  // connectors.
+  message GenericParameter {
+    // Configuration parameter id, must be unique for a given manifest.
+    string parameter_id = 1;
+
+    // Default display name for parameter (used if no I18N data is available)
+    string default_display_name = 2;
+
+    // Default description for parameter (used if no I18N data is available)
+    string default_description = 3;
+
+    // Data type
+    enum DataType {
+      // Unspecified data type
+      DATA_TYPE_UNSPECIFIED = 0;
+      // string type
+      STRING = 1;
+      // bool type
+      BOOL = 2;
+      // integer type
+      INTEGER = 3;
+      // double type
+      DOUBLE = 4;
+      // secret value - see DataSourceConfig.Secret
+      SECRET = 5;
+    }
+    // Data type of this parameter - maps directly to available oneof's in
+    // DataSourceConfig.ParameterValue during connector invocation.
+    DataType type = 4;
+
+    // Semantic type allows better representation of basic data types - for
+    // example to allow specialised handling in control planes - it does not
+    // affect connector invocation.
+    enum SemanticType {
+      // Unspecified semantic type
+      SEMANTIC_TYPE_UNSPECIFIED = 0;
+      // Hostname parameter type
+      HOSTNAME = 1;
+      // Port parameter type
+      PORT = 2;
+      // Google cloud project id or number
+      GCP_PROJECT = 3;
+    }
+    // Semantic type of this parameter
+    optional SemanticType semantic_type = 5;
+
+    // True if parameter should not be exposed for external customer facing
+    // configuration.
+    bool is_internal_only = 6;
+
+    // True if parameter should be mandatory during configuration
+    bool is_required = 7;
+    // Custom validation rules - to allow basic rpc-free validation for example
+    // directly in UI
+    repeated ValidationRule validation_rules = 8;
+    // If specified this parameter is treated as enumeration - connector
+    // receives a single concrete EnumEntry.entry_id string value but
+    // CuntrolPlane/UI can prepare input handling based on configured allowed
+    // entries. For example for parameter definition:
+    // {
+    //   parameter_id: "custom_mode"
+    //   type: STRING
+    //   enum_entries: [
+    //     {entry_id: "id1", default_display_name: "Option A"}
+    //     {entry_id: "id2", default_display_name: "Option B"}
+    //   ]
+    // }
+    // Connector expects to receive either "id1" or "id2" `STRING` values for
+    // `custom_mode` parameter.
+    repeated EnumEntry enum_entries = 9;
+
+    // Enumeration of allowed values - can be only used for `Type.STRING`
+    message EnumEntry {
+      // enumeration entry id - must be unique for a given parameter.
+      string entry_id = 1;
+      // Default display name for enumeration entry (used if no I18N data is
+      // available)
+      string default_display_name = 2;
+    }
+    // Custom validation rule for a generic parameter
+    message ValidationRule {
+      // Identifier of custom validation rule, must be unique for a given
+      // manifest.
+      string validation_rule_id = 1;
+      // Default error message (used if no I18N data is available). Can be
+      // skipped to use a default per-kind error message.
+      optional string default_error_message = 2;
+
+      oneof kind {
+        // regular expression
+        Regexp regexp = 3;
+        // between
+        // (-- api-linter: core::0140::prepositions=disabled
+        // aip.dev/not-precedent: Standard between naming. --)
+        Between between = 4;
+        // greater than
+        GreaterThan greater_than = 5;
+        // lower than
+        LowerThan lower_than = 6;
+      }
+
+      // Regular expression validation
+      message Regexp {
+        // regular expression string
+        string expression = 1;
+      }
+
+      // Validates if value is between configured limits
+      message Between {
+        // min allowed value
+        protobuf.Value value_min = 1;
+        // max allowed value
+        protobuf.Value value_max = 2;
+        // true if "min" validation should be inclusive
+        bool inclusive_min = 3;
+        // true if "max" validation should be inclusive
+        bool inclusive_max = 4;
+      }
+
+      // Validates if value is above configured limit
+      message GreaterThan {
+        // min allowed value
+        protobuf.Value value_min = 1;
+        // true if validation should be inclusive
+        bool inclusive = 2;
+      }
+
+      // Validates if value is below configured limit
+      message LowerThan {
+        // max allowed value
+        protobuf.Value value_max = 1;
+        // true if validation should be inclusive
+        bool inclusive = 2;
+      }
+    }
+  }
+  // LINT.ThenChange(data_source_config.proto:generic)
+}

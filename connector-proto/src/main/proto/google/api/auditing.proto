@@ -1,0 +1,219 @@
+////////////////////////////////////////
+// PLEASE READ BEFORE MAKING CHANGES: //
+////////////////////////////////////////
+// This file is a clone of "google3/google/api/auditing.proto" at cl/482208361
+// (http://google3/google/api/auditing.proto;l=1;rcl=482208361) with changes:
+// 1. Replace the import "net/proto2/proto/descriptor.proto" with
+//    "google/protobuf/descriptor.proto" to avoid cloning yet another google3
+//    proto file.
+// 2. Update the reference to package "proto2" defined in
+//    "net/proto2/proto/descriptor.proto" with "google.protobuf" defined in
+//    "google/protobuf/descriptor.proto"
+
+//////////////////////////////////////
+// PLEASE READ AFTER MAKING CHANGES //
+//////////////////////////////////////
+// 1. When making modifications, keep original code from Google3 but comment
+//    out the line and add a one-line command "// Google3 original code:" above.
+// 2. Make sure to update the cl above to indicate which version of Google3
+//    proto file that this copy is a clone of.
+// 3. Make sure compilation passes for this module
+// 4. May require syncing other protos depending on this to last versions
+//    in Google3.
+
+syntax = "proto3";
+
+package google.api;
+
+// Google3 original code:
+// import "net/proto2/proto/descriptor.proto";
+import "google/protobuf/descriptor.proto";
+
+option go_package = "google.golang.org/genproto/googleapis/api/auditing;auditing";
+option java_multiple_files = true;
+option java_outer_classname = "AuditingProto";
+option java_package = "com.google.api";
+option objc_class_prefix = "GAPI";
+option cc_enable_arenas = true;
+
+// `Auditing` defines the configurations on preparing audit log records for
+// services to integrate with audit logging service.
+//
+// (-- GOOGLE_INTERNAL
+// Services need to manually attach audit log record to RPC side channel to
+// trigger auditing feature provided by One Platform.
+//
+// See go/al-how for Cloud Audit Logging guide and go/gcp-gin-howto-esf for Gin
+// Logging guide.
+// --)
+message Auditing {
+  // A list of audit rules for configuring the audit logging behavior.
+  //
+  // **NOTE:** All service configuration rules follow "last one wins" order.
+  repeated AuditingRule rules = 1;
+
+  // Additional labels to configure auditing logging behavior.
+  //
+  // (-- GOOGLE_INTERNAL
+  // Following labels are supported for Gin audit logging:
+  //
+  // - **gin.googleprod.com/accessing_process_family**: the value to fill in
+  // "accessing_process_family" field in Gin DataAccessLogProto.
+  //
+  // - **gin.googleprod.com/accessing_process_name**: the value to fill in
+  // "accessing_process_name" field in Gin DataAccessLogProto.
+  //
+  // - **gin.googleprod.com/enable_autoresource_in_aac_envelope**: whether to
+  // enable or disable Autoresource (go/autoresource-ug) in the AAC envelope.
+  // This feature is only available to C++/Java Stubby services and Scaffolding
+  // services. Go Stubby, Apps Framework, and Goa are currently not supported.
+  // Where supported, this feature is enabled by default. To disable it, set
+  // the label to "false".
+  //
+  // --)
+  map<string, string> labels = 2;
+}
+
+// An auditing rule provides auditing configuration for an individual API
+// element.
+message AuditingRule {
+  // Selects fields or methods where this rule applies.
+  //
+  // Refer to [selector][DocumentationRule.selector] for syntax details.
+  string selector = 1;
+
+  // List of audit directives (comma separated) to apply to this rule.
+  // Currently following values are supported:
+  //
+  // (-- GOOGLE_INTERNAL
+  // See go/al-how for Cloud Audit Logging annotation guide and
+  // go/gin-annotation-ug for Gin Logging annotation guide.
+  // --)
+  //
+  // - **AUDIT**: The value of this field should be logged during Cloud audit
+  //              logging. If this field is one of following message types:
+  //                - google.protobuf.DoubleValue
+  //                - google.protobuf.FloatValue
+  //                - google.protobuf.Int64Value
+  //                - google.protobuf.UInt64Value
+  //                - google.protobuf.Int32Value
+  //                - google.protobuf.UInt32Value
+  //                - google.protobuf.BoolValue
+  //                - google.protobuf.StringValue
+  //                - google.protobuf.BytesValue
+  //                - google.protobuf.Timestamp
+  //                - google.protobuf.Duration
+  //                - google.protobuf.FieldMask
+  //                - google.type.Color
+  //                - google.type.Date
+  //                - google.type.Expr
+  //                - google.type.LatLng
+  //                - google.type.Money
+  //                - google.type.TimeOfDay
+  //                - google.api.MonitoredResource
+  //              then the whole message content of this field will be logged,
+  //              provided all parent fields in its path have AUDIT annotations.
+  //              For fields with other message types, only message content
+  //              (that is, nested fields) with the "AUDIT" directive will be
+  //              logged.
+  //              (-- GOOGLE_INTERNAL: The value of this field will also be
+  //              logged during Gin audit logging --).
+  // - **AUDIT_EXEMPTED**: Applied to API method only. Explicitly indicating
+  //                       both request and response are exempted from auditing.
+  //                       Note that a Cloud Audit Log will still be generated.
+  // - **AUDIT_OPT**: (Deprecated as of 2017/12/07)
+  //                  This is essentially the same as `AUDIT` but only applies
+  //                  to API methods with "AUDIT_OPT" as well. The value of
+  //                  this field will only be logged iff the API method is also
+  //                  configured as "AUDIT_OPT".
+  //                  (-- GOOGLE_INTERNAL: The value of this field will be
+  //                  logged during Gin audit logging --).
+  // - **AUDIT_REDACT**: Indicating a singular message type field, if set,
+  //                     will be preserved but all its nested fields will be
+  //                     scrubbed away during cloud audit logging. If needed,
+  //                     use wrappers in google/protobuf/wrappers.proto for
+  //                     primitive (non-message) type for redaction purpose.
+  // - **AUDIT_REQUEST_AND_RESPONSE**: Applied to API method only. Indicating
+  //                                   both request and response messages will
+  //                                   be audited.
+  // - **AUDIT_REQUEST_ONLY**: Applied to API method only. Indicating that only
+  //                           request message will be audited.
+  // - **AUDIT_SIZE**: The size of the repeated field will be used to set the
+  //                   number of response items during Cloud audit logging
+  //                   (-- GOOGLE_INTERNAL: and Gin audit logging --). It
+  //                   should only be applied to repeated field which
+  //                   represents the returned data from a List or Query API
+  //                   method annotated with AUDIT_REQUEST_AND_RESPONSE.
+  //                   Note: for each method's response message, you
+  //                   could have at most one field annotated with AUDIT_SIZE.
+  //
+  // (-- GOOGLE_INTERNAL:
+  //
+  // - **QUERY**: Indicating that the field represents a manually entered query
+  //              that users enters. For example, if this service is the backend
+  //              of an interactive query-like tool, this directive should be
+  //              set to the field representing the full query entered by user.
+  //              Only applies to string field.
+  //              (-- GOOGLE_INTERNAL: The value of this field will be populated
+  //              as "query" field in DataAccessLogProto for Gin audit logging
+  //              --)
+  // - **READ_ACTION**: Indicating that the method reads user data. Only applies
+  //                    to method.
+  //                    (-- GOOGLE_INTERNAL: The method will be populated with
+  //                    READ in "action_type" field of DataAccessLogProto for
+  //                    Gin audit logging. --)
+  // - **WRITE_ACTION**: Indicating that the method modifies user data. Only
+  //                     applies to method.
+  //                     (-- GOOGLE_INTERNAL: The method will be populated with
+  //                     WRITE in "action_type" field of DataAccessLogProto for
+  //                     Gin audit logging. --)  //
+  // - **AUDIT_GIN**: The value of this field should be logged to Gin audit
+  //                  only, in case Gin audit and Cloud audit have different
+  //                  auditing requirements for one field.
+  // - **AUDIT_GIN_FULL_REQUEST**: Indicating that every single field in your
+  //                               request proto will be logged, as if each
+  //                               field had the AUDIT annotation marked.
+  // - **AUDIT_GIN_FULL_RESPONSE**: Indicating that the full response proto wil
+  //                                be serialized and encrypted into the Gin
+  //                                log's `encrypted_full_response_info` field
+  //                                when it is sent to Gin logcatchers.
+  // - **AUDIT_CLOUD**: The value of this field should be logged to Cloud audit
+  //                    only, in case Gin audit and Cloud audit have different
+  //                    auditing requirements for one field. Note: this field is
+  //                    only used for AutoGin. It is NOT used for CAL (except if
+  //                    you're using CCFE). To audit a field for CAL, you must
+  //                    still add the AUDIT annotation.
+  // - **ANNOTATED_IN_CONFIG**: The annoation of this field will be provided in
+  //                            the RpcSecurityPolicy configuration file. An
+  //                            example use case is when the field type is a
+  //                            common proto shared by multiple teams.
+  //
+  // The following directives will only be used for the Tricorder analyzer
+  // GinAuditingAnnotationAnalyzer(go/gin-tricorder). It does not have any
+  // effect on Gin logging. If no user data is actually accessed and you do not
+  // want a Gin log generated, Gin logging should be disabled via RpcSP
+  // configuration. Please refer to the doc at go/gin-rpc for details.
+  //
+  // - **TARGET_ADDED_IN_CODE**: Method annotation. The target identifier of the
+  //                             access will be added in application code. This
+  //                             is useful when the target identifier is not
+  //                             available in the request/response proto.
+  // - **NO_USER_DATA_ACCESSED**: Method annotation. The method will not access
+  //                              user data. An example is loading a tool's
+  //                              front page, such as GoogleAdmin.
+  // --)
+  string directive = 2;
+}
+
+
+// Google3 original code:
+// extend proto2.FieldOptions {
+extend google.protobuf.FieldOptions {
+  AuditingRule field_auditing = 112199341;
+}
+
+// Google3 original code:
+// extend proto2.MethodOptions {
+extend google.protobuf.MethodOptions {
+  AuditingRule method_auditing = 112199341;
+}

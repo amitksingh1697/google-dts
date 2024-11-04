@@ -1,0 +1,46 @@
+// (-- api-linter: core::0127::http-annotation=disabled
+//     aip.dev/not-precedent: This API is not a public API implemented by
+//     Google. It is meant to be implemented by partners and providers, and
+//     called by Google. We (Google) will always call this API via gRPC, never
+//     HTTP; hence, HTTP transcoding is not relevant. --)
+
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v2alpha1;
+
+import "connector/v2alpha1/data.proto";
+import "connector/v2alpha1/data_source_config.proto";
+import "google/api/field_behavior.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v2alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "ReaderServiceProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V2Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V2alpha1";
+option objc_class_prefix = "GCBQFV2A1";
+
+// The 'data plane' of the Federation API, used for retrieving results of
+// parallel queries.
+service ReaderService {
+  // Retrieves the specified result stream.
+  // A 0-record response in the stream is considered as the 'end of stream'
+  // signal.
+  //
+  // (-- api-linter: core::0131::synonyms=disabled
+  //     aip.dev/not-precedent: since the result is a stream, 'read' is more
+  //     customary than 'get'. --)
+  rpc ReadStream(ReadStreamRequest) returns (stream Data) {}
+}
+
+// Request to retrieve query results for a specific result stream.
+message ReadStreamRequest {
+  // Specifies the stream to read, in the format:
+  // datasources/{datasource}/instances/{instance}/datasets/{dataset}/resultsets/{resultset}/streams/{stream}.
+  // All components but the datasource are URL-encoded.
+  string result_stream = 1;
+
+  // Data source configuration. The parameters must be consistent with these
+  // reported by the connector via DataSourceConfigManifest.
+  DataSourceConfig datasource_config = 2
+      [(google.api.field_behavior) = REQUIRED];
+}

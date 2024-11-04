@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v1alpha1;
+
+import "google/api/resource.proto";
+import "connector/v1alpha1/expression.proto";
+import "connector/v1alpha1/functions.proto";
+import "connector/v1alpha1/types.proto";
+import "google/protobuf/duration.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v1alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "DataSourceProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V1Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V1alpha1";
+option objc_class_prefix = "GCBQFV1A1";
+
+// A configuration parameter supported by a data source of certain type.
+message Parameter {
+  // (-- aip.dev/beta-blocker: Resolve the API resource pattern and problematic
+  // fields before the Beta launch: b/261387945. --)
+  option (google.api.resource) = {
+    type: "google.cloud.bigquery.federation.v1alpha1/Parameter"
+    pattern: "datasources/{datasource}/parameters/{parameter}"
+  };
+
+  // Full parameter name, in the format:
+  // datasources/{datasource}/parameters/{parameter}
+  // where `parameter_path` is a '/'-separated list of parameter IDs.
+  string name = 1;
+
+  // Parameter ID, corresponding to the trailing ID in the full name.
+  // (-- aip.dev/not-precedent: This preceded the AIP standards.
+  //     Ordinarily, this should be parameter_id (AIP-122). --)
+  string id = 2;
+
+  // Parameter type.
+  Type type = 3;
+}
+
+// Data source type definition and capabilities.
+message DataSource {
+  // (-- aip.dev/beta-blocker: Resolve the API resource pattern and problematic
+  // fields before the Beta launch: b/261387945. --)
+  option (google.api.resource) = {
+    type: "google.cloud.bigquery.federation.v1alpha1/DataSource"
+    pattern: "datasources/{id}"
+  };
+
+  // Full name of the data source type, in the format 'datasources/{id}'.
+  string name = 1;
+
+  // Data source type ID.
+  // (-- aip.dev/not-precedent: This preceded the AIP standards.
+  //     Ordinarily, this should be data_source_id (AIP-122). --)
+  string id = 2;
+
+  // The capabilities of the data source type.
+  enum Capability {
+    // No capabilities specified.
+    CAPABILITY_UNSPECIFIED = 0;
+
+    // The data source type supports native queries, i.e. query strings that
+    // can be used verbatim to query the external dataset.
+    SUPPORTS_NATIVE_QUERIES = 1;
+
+    // The data source type supports nested source subqueries.
+    SUPPORTS_SOURCE_NESTING = 2;
+
+    // The data source supports StartQuery.
+    // At least one of SUPPORTS_PARALLEL_QUERIES and
+    // SUPPORTS_SYNCHRONOUS_QUERIES must be declared.
+    SUPPORTS_PARALLEL_QUERIES = 3;
+
+    // The data source supports ExecuteQuery.
+    // At least one of SUPPORTS_PARALLEL_QUERIES and
+    // SUPPORTS_SYNCHRONOUS_QUERIES must be declared.
+    SUPPORTS_SYNCHRONOUS_QUERIES = 4;
+
+    // The data source type supports the LIMIT operator.
+    SUPPORTS_LIMIT = 5;
+
+    // The data source type supports the OFFSET operator.
+    SUPPORTS_OFFSET = 6;
+
+    // The data source type supports sorting.
+    SUPPORTS_SORTING = 7;
+
+    // The data source type supports type casts.
+    SUPPORTS_TYPE_CAST = 8;
+
+    // The data source type supports the JOIN operator.
+    SUPPORTS_JOIN = 9;
+
+    // The data source type supports the filter operator.
+    SUPPORTS_FILTER = 10;
+
+    // The data source type supports compute and projection. The set of
+    // supported operators and functions is specified in `supported_functions`.
+    SUPPORTS_COMPUTE = 11;
+  }
+
+  // The set of capabilities supported by this data source type.
+  repeated Capability capabilities = 3;
+
+  // The set of supported functions. See below. This field will eventually get
+  // deprecated and replaced by supported_function_signatures.
+  repeated Functions.FunctionId supported_functions = 4;
+
+  // The set of supported function signatures. Determines whether pushdown of
+  // pre or post aggregation filters as well as aggregates is possible to
+  // the data source.
+  repeated FunctionSignatureId supported_function_signatures = 7;
+
+  // The set of supported parameters.
+  repeated Parameter parameters = 5;
+
+  // If provided, specifies for how long can the client cache these datasource
+  // specific metadata. If not provided, a default of 1h is assumed.
+  // (-- aip.dev/not-precedent: This preceded the AIP standards.
+  //     Ordinarily, this should be controlled with HTTP headers or possibly
+  //     etags. --)
+  google.protobuf.Duration max_staleness = 6;
+}

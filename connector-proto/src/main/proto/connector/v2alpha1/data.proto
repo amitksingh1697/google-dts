@@ -1,0 +1,82 @@
+// (-- api-linter: core::0127::http-annotation=disabled
+//     aip.dev/not-precedent: This is not a Google API. --)
+// (-- api-linter: core::0123::resource-annotation=disabled
+//     aip.dev/not-precedent: This is not a Google API. --)
+
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v2alpha1;
+
+import "connector/v2alpha1/query.proto";
+import "connector/v2alpha1/schema.proto";
+import "connector/v2alpha1/types.proto";
+import "substrait/plan.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v2alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "FederationDataProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V2Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V2alpha1";
+option objc_class_prefix = "GCBQFV2A1";
+
+// Represents a block of a result stream.
+// NEXT ID: 10;
+message Data {
+  // Present *only* in the first message of the result stream.
+  // Schema of the result data returned by the Federated Query Engine.
+  oneof schema {
+    // Deprecated: New usage of `federation_schema` are discouraged.
+    //`substrait_schema` should be used instead.
+    Schema federation_schema = 1 [deprecated = true];
+    SubstraitSchema substrait_schema = 2;
+  }
+
+  // The ID of the result set that the rowset belongs to. Present (only)
+  // in the first message of the result stream.
+  bytes resultset_id = 6;
+
+  // The ID of the result stream that the rowset belongs do.
+  // Present (only) in the first message of the result stream.
+  bytes stream_id = 7;
+
+  // Present (only) in the first message of the result stream.
+  // If non-empty, the computations that must be performed by the requester on
+  // the returned result sets in order to obtain the result as originally
+  // requested.
+  // Intended for data sources that support push down only under certain
+  // conditions that cannot be validated until the exact computation is known.
+  oneof residue {
+    // Deprecated: New usage of `residual_query` are discouraged.
+    //`residual_plan` should be used instead.
+    // Residual query must be equal to the original query with some of the nodes
+    // replaced by 'source' references corresponding to the returned
+    // result_sets.
+    DataQuery residual_query = 3 [deprecated = true];
+
+    // Residual Plan will contain any remaining part of the Query Transformation
+    // Plan that could not be executed by the target Query Engine.
+    substrait.Plan residual_plan = 9;
+  }
+
+  // RowSet with the data.
+  message RowSet {
+    // Data rows.
+    repeated StructValue rows = 1;
+  }
+  // Data rows field, which will be replaced by the `data_block` field.
+  RowSet rowset = 4 [lazy = true];
+
+  // DataBlock with the data.
+  message DataBlock {
+    oneof data_block {
+      // RowSet, row based data.
+      RowSet rowset = 1;
+    }
+  }
+  // The DataBlock to store one type of the possible data output of
+  // `ResultStream`.
+  DataBlock data_block = 5;
+
+  // Size of the data block, in bytes, as read from the underlying data source.
+  int64 data_size_bytes = 8;
+}

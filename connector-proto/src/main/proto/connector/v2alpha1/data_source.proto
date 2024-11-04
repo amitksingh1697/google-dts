@@ -1,0 +1,170 @@
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v2alpha1;
+
+import "connector/v2alpha1/data_source_config_manifest.proto";
+import "connector/v2alpha1/expression.proto";
+import "connector/v2alpha1/functions.proto";
+import "connector/v2alpha1/types.proto";
+import "google/api/resource.proto";
+import "google/protobuf/duration.proto";
+import "substrait/capabilities.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v2alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "DataSourceProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V2Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V2alpha1";
+option objc_class_prefix = "GCBQFV2A1";
+
+// A configuration parameter supported by a data source of certain type.
+message Parameter {
+  // (-- aip.dev/beta-blocker: Resolve the API resource pattern and problematic
+  // fields before the Beta launch: b/261387945. --)
+  option (google.api.resource) = {
+    type: "google.cloud.bigquery.federation.v2alpha1/Parameter"
+    pattern: "datasources/{datasource}/parameters/{parameter}"
+  };
+
+  // Full parameter name, in the format:
+  // datasources/{datasource}/parameters/{parameter}
+  // where `parameter_path` is a '/'-separated list of parameter IDs.
+  string name = 1;
+
+  // Parameter ID, corresponding to the trailing ID in the full name.
+  // (-- aip.dev/not-precedent: This preceded the AIP standards.
+  //     Ordinarily, this should be parameter_id (AIP-122). --)
+  string id = 2;
+
+  // Parameter type.
+  Type type = 3;
+}
+
+// Data source type definition and capabilities.
+message DataSource {
+  // (-- aip.dev/beta-blocker: Resolve the API resource pattern and problematic
+  // fields before the Beta launch: b/261387945. --)
+  option (google.api.resource) = {
+    type: "google.cloud.bigquery.federation.v1alpha1/DataSource"
+    pattern: "datasources/{id}"
+  };
+
+  // Full name of the data source type, in the format 'datasources/{id}'.
+  string name = 1;
+
+  // Data source type ID.
+  // (-- aip.dev/not-precedent: This preceded the AIP standards.
+  //     Ordinarily, this should be data_source_id (AIP-122). --)
+  string id = 2;
+
+  // The capabilities of the data source type.
+  // NextId: 17
+  enum Capability {
+    // No capabilities specified.
+    CAPABILITY_UNSPECIFIED = 0;
+
+    // The data source type supports native queries, i.e. query strings that
+    // can be used verbatim to query the external dataset.
+    SUPPORTS_NATIVE_QUERIES = 1;
+
+    // The data source type supports nested source subqueries.
+    SUPPORTS_SOURCE_NESTING = 2;
+
+    // The data source supports StartQuery.
+    // At least one of SUPPORTS_PARALLEL_QUERIES and
+    // SUPPORTS_SYNCHRONOUS_QUERIES must be declared.
+    SUPPORTS_PARALLEL_QUERIES = 3;
+
+    // The data source supports ExecuteQuery.
+    // At least one of SUPPORTS_PARALLEL_QUERIES and
+    // SUPPORTS_SYNCHRONOUS_QUERIES must be declared.
+    SUPPORTS_SYNCHRONOUS_QUERIES = 4;
+
+    // The data source type supports the LIMIT operator.
+    SUPPORTS_LIMIT = 5;
+
+    // The data source type supports the OFFSET operator.
+    SUPPORTS_OFFSET = 6;
+
+    // The data source type supports sorting.
+    SUPPORTS_SORTING = 7;
+
+    // The data source type supports type casts.
+    SUPPORTS_TYPE_CAST = 8;
+
+    // The data source type supports the JOIN operator.
+    SUPPORTS_JOIN = 9;
+
+    // The data source type supports the filter operator.
+    SUPPORTS_FILTER = 10;
+
+    // The data source type supports the column reference.
+    SUPPORTS_COLUMN_SELECTION = 11;
+
+    // The data source type supports the compute operator. The set of
+    // supported operators and functions is specified in
+    // `supported_function_signatures`.
+    SUPPORTS_COMPUTE = 12;
+
+    // The data source type supports the aggregation operator.
+    SUPPORTS_AGGREGATION = 15;
+
+    // The data source type supports the partial aggregation.
+    // The result of partial aggregation will be postprocessed. The supported
+    // aggregate functions are: `SUM`, `COUNT`, `COUNTIF`, `COUNT(*)`, `MAX`,
+    // `MIN`, `LOGICAL_AND`, `LOGICAL_OR`, `BIT_AND`, `BIT_OR`, `BIT_XOR`,
+    // `STRING_AGG` and `ARRAY_AGG`.
+    SUPPORTS_PARTIAL_AGGREGATION = 16;
+
+    // The data source supports default format for DATE, which is INT32.
+    // Some data sources still use INT64 for backward compatibility.
+    // This capability is going to be removed when all data sources
+    // migrate to INT32.
+    SUPPORTS_INT32_DATE = 13;
+
+    // If the query is executed in the dry run mode, the `StartQuery` will be
+    // called only if the data source SUPPORTS_BASIC_DRY_RUN. If this capability
+    // is not set, `StartQuery` will not be executed. This capability only
+    // affects and should only be advertised by data sources that
+    // SUPPORTS_PARALLEL_QUERIES.
+    SUPPORTS_BASIC_DRY_RUN = 14;
+  }
+
+  // The set of capabilities supported by this data source type.
+  repeated Capability capabilities = 3;
+
+  // The set of supported functions. See below. This field will eventually get
+  // deprecated and replaced by supported_function_signatures.
+  repeated Functions.FunctionId supported_functions = 4;
+
+  // The set of supported function signatures. Determines whether pushdown of
+  // pre or post aggregation filters as well as aggregates is possible to
+  // the data source.
+  repeated FunctionSignatureId supported_function_signatures = 7;
+
+  // The set of supported literal types. Determines whether pushdown of literals
+  // as part of the pre or post aggregation filters as well as aggregates is
+  // possible to the data source.
+  // See the documentation of the GoogleSql literals here:
+  // (https://g3doc.corp.google.com/company/teams/googlesql/reference/lexical.md#literals)
+  repeated TypeKind supported_literal_types = 8;
+
+  // Configuration manifest of a data source. Allows to discover available
+  // configuration modes and parameters.
+  DataSourceConfigManifest config_manifest = 5;
+
+  // If provided, specifies for how long can the client cache these datasource
+  // specific metadata. If not provided, a default of 1h is assumed.
+  // (-- aip.dev/not-precedent: This preceded the AIP standards.
+  //     Ordinarily, this should be controlled with HTTP headers or possibly
+  //     etags. --)
+  google.protobuf.Duration max_staleness = 6;
+
+  // The Substrait capabilities supported by the system hosting the targeted
+  // datasource.
+  substrait.Capabilities substrait_capabilities = 9;
+
+  // The list of Substrait type literals that are supported by the targeted
+  // datasource.
+  repeated string supported_substrait_literal_types = 10;
+}

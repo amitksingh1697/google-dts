@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v2alpha1;
+
+import "substrait/type.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v2alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "SubstraitExtensionsProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V2Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V2alpha1";
+option objc_class_prefix = "GCBQFV2A1";
+
+// Native Query.
+message NativeQuery {
+  // The arbitrary query that is directly sent to the underlying datasource.
+  string query = 1;
+  // Schema of the data returned by the connected Data Source.
+  substrait.NamedStruct base_schema = 2;
+}

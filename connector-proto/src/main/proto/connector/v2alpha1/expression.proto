@@ -1,0 +1,300 @@
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v2alpha1;
+
+import "connector/v2alpha1/functions.proto";
+import "connector/v2alpha1/types.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v2alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "FederationExpressionProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V2Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V2alpha1";
+option objc_class_prefix = "GCBQFV2A1";
+
+// Functions supported by a data source.
+message Functions {
+  // Legacy function id.
+  enum FunctionId {
+    // Unspecified function id.
+    FUNCTION_ID_UNSPECIFIED = 0;
+    // Add.
+    ADD = 1;
+    // Subtract.
+    SUBTRACT = 2;
+    // Multiply.
+    MULTIPLY = 3;
+    // Divide.
+    DIVIDE = 4;
+    // Equal.
+    EQUAL = 5;
+    // Greater.
+    GREATER = 6;
+    // Greater or equal.
+    GREATER_OR_EQUAL = 7;
+    // Less.
+    LESS = 8;
+    // Less or equal.
+    LESS_OR_EQUAL = 9;
+    // In.
+    IN = 10;
+    // Between.
+    BETWEEN = 11;
+    // IsNull. Checks if the input argument is set.
+    IS_NULL = 12;
+    // Not.
+    NOT = 13;
+    // Not equal.
+    NOT_EQUAL = 14;
+    // Or.
+    OR = 15;
+    // And.
+    AND = 16;
+    // String concatenation.
+    CONCAT = 17;
+    // Lower.
+    LOWER = 18;
+    // Upper.
+    UPPER = 19;
+    // Trim.
+    TRIM = 20;
+    // RegexpMatch.
+    REGEXP_MATCH = 21;
+    // RegexpExtract.
+    REGEXP_EXTRACT = 22;
+    // Coalesce.
+    COALESCE = 23;
+    // DateAdd.
+    DATE_ADD = 24;
+    // DatetimeAdd.
+    DATETIME_ADD = 25;
+    // TimestampAdd.
+    TIMESTAMP_ADD = 26;
+    // DateDiff.
+    DATE_DIFF = 27;
+    // DatetimeDiff.
+    DATETIME_DIFF = 28;
+    // TimestampDiff.
+    TIMESTAMP_DIFF = 29;
+    // Like.
+    LIKE = 30;
+    // Mod.
+    MOD = 31;
+    // Div.
+    DIV = 32;
+    // Cosine.
+    COS = 33;
+    // Sine.
+    SIN = 34;
+    // Rand.
+    RAND = 35;
+    // Case.
+    CASE = 36;
+    // Round.
+    ROUND = 37;
+    // Power.
+    POWER = 38;
+    // Abs.
+    ABS = 39;
+    // Log.
+    LOG = 40;
+    // Log10.
+    LOG10 = 41;
+    // Square root.
+    SQRT = 42;
+    // Floor.
+    FLOOR = 43;
+    // Ceiling.
+    CEIL = 44;
+    // Tan.
+    TAN = 45;
+    // Acos.
+    ACOS = 46;
+    // Asin.
+    ASIN = 47;
+    // Atan.
+    ATAN = 48;
+    // RegexpFullMatch.
+    REGEXP_FULL_MATCH = 49;
+    // StrPos
+    STRPOS = 50;
+    // Not In
+    NOT_IN = 51;
+    // IsNan
+    IS_NAN = 52;
+    // Sinh
+    SINH = 53;
+    // Cosh
+    COSH = 54;
+    // Tanh
+    TANH = 55;
+    // Exp
+    EXP = 56;
+    // Asinh
+    ASINH = 57;
+    // Acosh
+    ACOSH = 58;
+    // Atanh
+    ATANH = 59;
+    // FormatDate
+    FORMAT_DATE = 64;
+    // StrLen
+    STRLEN = 65;
+    // StrLeft
+    STRLEFT = 66;
+    // StrRight
+    STRRIGHT = 67;
+    // StrReplace
+    STRREPLACE = 68;
+    // Substr
+    SUBSTR = 69;
+    // RegexpReplace
+    REGEXP_REPLACE = 70;
+    // ToBase64
+    TO_BASE64 = 71;  // (-- api-linter: naming-format=disabled --)
+    // Subcontinent
+    SUBCONTINENT = 72;
+    // Continent
+    CONTINENT = 73;
+    // Country
+    COUNTRY = 74;
+    // Region
+    REGION = 75;
+    // City
+    CITY = 76;
+    // Format
+    FORMAT = 77;
+    // CurrentDate
+    CURRENT_DATE = 78;
+    // CurrentTimestamp
+    CURRENT_TIMESTAMP = 79;
+    // DateSub.
+    DATE_SUB = 80;
+    // DatetimeSub.
+    DATETIME_SUB = 81;
+    // TimestampSub.
+    TIMESTAMP_SUB = 82;
+    // ParseDate.
+    PARSE_DATE = 83;
+    // ParseDatetime.
+    PARSE_DATETIME = 84;
+    // Date
+    DATE = 85;
+    // Datetime
+    DATETIME = 86;
+    // DatetimeTrunc
+    DATETIME_TRUNC = 87;
+    // ExtractFromDate
+    EXTRACT_FROM_DATE = 88;
+    // ExtractFromDatetime
+    EXTRACT_FROM_DATETIME = 89;
+    // ExtractFromTimestamp
+    EXTRACT_FROM_TIMESTAMP = 90;
+    // DateFromUnixDate
+    DATE_FROM_UNIX_DATE = 91;
+    // UnixDate
+    UNIX_DATE = 92;
+    // Greatest
+    GREATEST = 93;
+    // Least
+    LEAST = 94;
+    // FormatDatetime
+    FORMAT_DATETIME = 95;
+    // FormatTimestamp
+    FORMAT_TIMESTAMP = 96;
+    // ParseTimestamp
+    PARSE_TIMESTAMP = 97;
+    // StartsWith
+    STARTS_WITH = 98;
+    // EndsWith
+    ENDS_WITH = 99;
+    // TIMESTAMP_FROM_UNIX_MICROS
+    TIMESTAMP_FROM_UNIX_MICROS = 100;
+
+    // Aggregate functions
+
+    DEFAULT = 1000;  // Default aggregation performed by destination backend.
+                     // It means that field is not reaggregatable
+                     // One example is ClickThroughRate in AdWords API that is
+                     // calculated as SUM(Clicks)/Sum(Expressions), but almost
+                     // any post processing or reaggregation on such field
+                     // is useless.
+    // Sum aggregate,
+    SUM = 1001;
+    // Min aggregate.
+    MIN = 1002;
+    // Max aggregate.
+    MAX = 1003;
+    // Average aggregate.
+    AVG = 1004;
+    // Count aggregate.
+    COUNT = 1005;
+    // CountDistinct aggregate.
+    COUNT_DISTINCT = 1006;
+    // ApproxCountDistinct aggregate.
+    APPROX_COUNT_DISTINCT = 1007;
+    // Median aggregate.
+    MEDIAN = 1008;
+    // (Sample) Variance aggregate.
+    VARIANCE = 1009;
+    // (Sample) Standard deviation aggregate.
+    STDDEV = 1010;
+    // Percentile aggregate.
+    PERCENTILE = 1011;
+  }
+}
+
+// Expression referencing a single field.
+message FieldExpression {
+  // Name of the field.
+  string field_name = 1;
+  // DataQuery alias, used only for join, empty otherwise.
+  string alias = 2;
+}
+
+// NEXT ID: 4
+// Function expression.
+message FunctionExpression {
+  oneof function {
+    // Function identifier.
+    // DEPRECATED; favor function_signature_id in new code.
+    // (-- aip.dev/beta-blocker: Remove this field before the Beta launch:
+    // b/261387945. --)
+    Functions.FunctionId function_id = 1 [deprecated = true];
+
+    // ID of the function along with the argument types.
+    FunctionSignatureId function_signature_id = 3;
+  }
+
+  // List of function arguments.
+  repeated Expression arguments = 2;
+}
+
+// NEXT ID: 3
+// Cast expression.
+// DEPRECATED; favor FunctionExpression.function_signature_id in new code.
+message CastExpression {
+  // Target type for cast.
+  Type type = 1;
+
+  // Cast input arguments.
+  Expression argument = 2;
+}
+
+// NEXT ID: 6
+// Data source expression.
+message Expression {
+  // Expression kind.
+  oneof expression {
+    // Function expression.
+    FunctionExpression function = 1;
+    // Constant expression.
+    Value constant = 2;
+    // Field expression.
+    FieldExpression field = 3;
+    // Cast expression.
+    CastExpression cast = 5;
+  }
+  // Type of the expression.
+  Type type = 4;
+}

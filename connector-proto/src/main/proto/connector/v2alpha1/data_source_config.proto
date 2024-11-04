@@ -1,0 +1,216 @@
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v2alpha1;
+
+import "google/protobuf/duration.proto";
+import "google/type/datetime.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v2alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "DataSourceConfigProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V2Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V2alpha1";
+option objc_class_prefix = "GCBQFV2A1";
+
+// Groups parameters used in ConnectorService methods.
+message DataSourceConfig {
+  // Connection configuration
+  Connection connection = 1;
+  // Data configuration
+  Data data = 2;
+  // Query configuration
+  Query query = 3;
+
+  // LINT.IfChange(connection)
+  // Connection parameters
+  message Connection {
+    // Endpoint parameters
+    Endpoint endpoint = 1;
+    // Authentication details
+    Authentication authentication = 2;
+    // Security configuration
+    Security security = 3;
+    // Network configuration
+    Network network = 4;
+    // Connection options
+    Options options = 5;
+
+    // Specific connection setup options
+    message Options {
+      // DataSource can use it to identify related tenant project for internal
+      // tenant resources setup.
+      optional int64 billing_project_number = 1;
+      // Connection establishing timeout
+      google.protobuf.Duration connect_timeout = 2;
+      // Additional non-standard parameters
+      optional GenericParameterValues generic = 100;
+    }
+
+    // Connection endpoint definition
+    message Endpoint {
+      oneof endpoint {
+        // Full URI - can be used for complex cases in which simple
+        // SocketAddress or DatabaseAddress do not apply
+        string uri = 1;
+        // ip/hostname + port
+        SocketAddress socket_address = 2;
+        // ip/hostname + port + database
+        DatabaseAddress database_address = 3;
+
+        // Custom generic endpoint definition
+        GenericParameterValues generic = 100;
+      }
+    }
+
+    // Authentication mode
+    message Authentication {
+      oneof authentication {
+        // Standard user/password authentication
+        UsernameAndPassword username_and_password = 1;
+        // Oauth authentication
+        Oauth oauth = 2;
+
+        // Custom generic authentication mode
+        GenericParameterValues generic = 100;
+      }
+    }
+
+    // Security related configuration
+    message Security {
+      // Additional non-standard parameters
+      optional GenericParameterValues generic = 100;
+    }
+
+    // Network related configuration
+    message Network {
+      oneof network {
+        // VPC networking configuration
+        VPC vpc = 1;
+      }
+
+      // Additional non-standard parameters
+      optional GenericParameterValues generic = 100;
+
+      // VPC configuration
+      message VPC {
+        // Network name in the format of
+        // `projects/{project}/global/networks/{network}`
+        string network_name = 1;
+        // Subnetwork name in the format of
+        // `projects/{project}/regions/{region}/subnetworks/{subnetwork}`
+        string subnetwork_name = 2;
+      }
+    }
+
+    // Socket address as hostname + port
+    message SocketAddress {
+      // Domain name or IP address
+      string hostname = 1;
+      // Port number
+      int32 port = 2;
+    }
+
+    // Database address endpoint - use for cases in which database is a required
+    // connectivity parameter (for example in PostgreSQL).
+    message DatabaseAddress {
+      // Socket address
+      SocketAddress socket_address = 1;
+      // Database name
+      string database = 2;
+    }
+
+    // Username and Password authentication
+    message UsernameAndPassword {
+      // Username as plaintext
+      string username = 1;
+      // Password
+      Secret password = 2;
+    }
+
+    // Oauth authentication parameters
+    message Oauth {
+      // Oauth client id
+      string oauth_client_id = 1;
+      // Oauth client secret
+      Secret oauth_client_secret = 2;
+    }
+  }
+  // LINT.ThenChange(data_source_config_manifest.proto:connection)
+
+  // LINT.IfChange(data)
+  // Data level parameters - separated from Query parameters because
+  // semantically may be shared by multiple queries - for example "schema name".
+  // Should contain combined set of parameters applicable to provided `target`.
+  // If concrete datasource allows to combine results from multiple targets (for
+  // example `target=catalog1` with `catalog1.schema1.table1` and
+  // `catalog1.schema2.table2` used in data query) provided parameters will
+  // apply to both schemas during query execution. Current approach does not
+  // allow to specify separate per-target parameter sets for a single query
+  // execution.
+  message Data {
+    // Custom generic data parameters.
+    optional GenericParameterValues generic = 100;
+  }
+  // LINT.ThenChange(data_source_config_manifest.proto:data)
+
+  // LINT.IfChange(query)
+  // Per-query parameters
+  message Query {
+    // The timeout beyond which the client will consider query results no longer
+    // relevant. If the timeout is present and the query has not completed by
+    // the timeout (counting from the time the StartQuery request has been
+    // received), the server is allowed to cancel the query and report failure
+    // from ReadStream().
+    // Later, when calling ReadStream, the client is expected to set context
+    // deadlines that are not exceeding the deadline implied by this timeout.
+    google.protobuf.Duration timeout = 1;
+
+    // Default timezone
+    optional google.type.TimeZone time_zone = 2;
+
+    // Custom generic query parameters
+    optional GenericParameterValues generic = 100;
+  }
+  // LINT.ThenChange(data_source_config_manifest.proto:query)
+
+  // LINT.IfChange(generic)
+  // Fully generic definition which can be used as an escape valve for
+  // situations in which one of existing options does not apply and case is
+  // specific enough that it's not worth to make it reusable - care must be
+  // taken that this approach is not overused
+  message GenericParameterValues {
+    // Must follow format defined in DataSourceConfigManifest with
+    // `GenericParameter.parameter_id` used as key.
+    map<string, ParameterValue> values = 1;
+  }
+
+  // Value for GenericParameterValues
+  message ParameterValue {
+    oneof value {
+      // string
+      string string_value = 1;
+      // bool
+      bool bool_value = 2;
+      // integer
+      int32 integer_value = 3;
+      // double
+      double double_value = 4;
+      // Secret
+      Secret secret_value = 5;
+    }
+  }
+  // LINT.ThenChange(data_source_config_manifest.proto:generic)
+
+  // Secret value parameter
+  message Secret {
+    oneof secret {
+      // Secret as plaintext - should not be logged
+      string plaintext = 1;
+      // SecretManager resource name for example
+      // "projects/my-project/secrets/my-secret-name/versions/1" see
+      // https://cloud.google.com/secret-manager
+      // Commented out until approach is finalized
+      // string secret_manager_resource = 2;
+    }
+  }
+}

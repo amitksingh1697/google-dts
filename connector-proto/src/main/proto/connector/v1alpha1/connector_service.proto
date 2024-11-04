@@ -1,0 +1,270 @@
+// (-- api-linter: core::0127::http-annotation=disabled
+//     aip.dev/not-precedent: This API is not a public API implemented by
+//     Google. It is meant to be implemented by partners and providers, and
+//     called by Google. We (Google) will always call this API via gRPC, never
+//     HTTP; hence, HTTP transcoding is not relevant. --)
+// (-- api-linter: core::0140::base64=disabled
+//     aip.dev/not-precedent: The comments hint the users how to optionally
+//     pass additional data via IDs that are ordinarily parts of resource names.
+//     --)
+syntax = "proto3";
+
+package google.cloud.bigquery.federation.v1alpha1;
+
+import "connector/v1alpha1/data.proto";
+import "connector/v1alpha1/data_source.proto";
+import "connector/v1alpha1/query.proto";
+import "connector/v1alpha1/schema.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+
+option java_package = "com.google.cloud.bigquery.federation.v1alpha1";
+option java_multiple_files = true;
+option java_outer_classname = "ConnectorServiceProto";
+option csharp_namespace = "Google.Cloud.BigQuery.Federation.V1Alpha1";
+option php_namespace = "Google\\Cloud\\BigQuery\\Federation\\V1alpha1";
+option objc_class_prefix = "GCBQFV1A1";
+
+// Connector service allows BigQuery to discover and query external datasets.
+//
+// The entities exposed via this service are modeled using the following
+// resource hierarchy:
+//
+// data source (type)
+//  + data source instance
+//     + dataset
+//        + result set
+//           + stream
+//  + parameter
+//      + nested parameters...
+//
+// * The data source type is a name of technological stack that serves the data.
+// * The data source instance is a specific deployment of the data source type,
+//   tied to some resource allocation, with dedicated configuration.
+// * The dataset is a queryable entity within the instance - for example,
+//   a single database. Datasets are subjects of querying.
+// * Parameters are strongly-typed and potentially hierarchical attributes that
+//   are supplied by the caller when querying the data.
+//
+// Data source IDs are named using lowercase letters, digits, and a hyphen.
+// The recommended format is: <provider_name>-<type>. The prefix 'google-' is
+// reserved.
+//
+// Parameter IDs are named using lowercase letters, digits, and a hyphen.
+//
+// The IDs of data source instances, datasets, result sets, and streams, are
+// unrestricted, and are always URL-encoded in full resource names.
+service ConnectorService {
+  // Initiates a query on the specified external dataset.
+  //
+  // The connector is expected to:
+  // * parse and validate the request,
+  // * decide which part of the query, if any, needs to be pushed back to the
+  //   caller (as 'residual_query'),
+  // * establish IDs and labels of the result sets. If the query does not push
+  //   back any residual query, or if the query does not contain joins, there
+  //   is just one result set, which should have an empty name. Otherwise,
+  //   there may be multiple result sets, which should be named consistently
+  //   with source references in the 'residual query',
+  // * for each result set, determine the number and IDs of its result streams,
+  // * decide the overall concurrency limit that the caller should observe
+  //   when fetching the data.
+  //
+  // This method should return quickly and asynchronously, i.e. not waiting for
+  // the results of query execution.
+  //
+  // The connector is encouraged to initiate the query asynchronously, and
+  // maintain its own state, so that subsequent calls to
+  // ReaderService.ReadStream encounter pre-fetched results or at least a
+  // warmed-up service. A simple, stateless connector may, however, decide to
+  // encode arbitrary context, including the full query, into a combination of
+  // resultset_id and stream_id, so that subsequent ReadStream requests do not
+  // need to rely on any extra state.
+  rpc StartQuery(StartQueryRequest) returns (StartQueryResponse);
+
+  // Executes the query on the specified external dataset, returning a single
+  // result stream.
+  //
+  // This method is provided as a performance optimization for small queries,
+  // allowing them to be performed in just one RPC. It can be thought of as a
+  // combination of a StartQuery and ReadStream, in a special case when there
+  // is just one result set consisting of a single result stream. The returned
+  // stream is equivalent to a stream that would be returned by calling
+  // ReadStream using the IDs of that singular result set and its singular
+  // stream.
+  //
+  // The connector may still return a 'residual query', as it would from
+  // StartQuery, by attaching it to the first message of the data stream.
+  // Due to the singularity of the result set, however, the connector is unable
+  // to push back on joins. If the query contains a join that the connector
+  // is unable to execute, the call will fail.
+  rpc ExecuteQuery(ExecuteQueryRequest) returns (stream Data);
+
+  // Returns schema for the specified external data source table or query.
+  rpc ResolveSchema(ResolveSchemaRequest) returns (Schema);
+
+  // Retrieves the metadata, such as the list of configuration parameters,
+  // supported by the given data source type via this connector.
+  rpc GetDataSource(GetDataSourceRequest) returns (DataSource);
+}
+
+// Request to initiate a query.
+message StartQueryRequest {
+  // The dataset that this query is targeted to, in the format
+  // datasources/{datasource}/instances/{instance}/datasets/{dataset}.
+  // The instance and the dataset IDs are URL-encoded.
+  string dataset = 1;
+
+  // The datasource-type-specific parameters that have been provided by
+  // the caller. The parameters must be consistent with these reported by the
+  // connector via GetDataSource.
+  google.protobuf.Struct parameters = 2;
+
+  // The query to initiate.
+  DataQuery data_query = 3;
+
+  // The timeout beyond which the client will consider query results no longer
+  // relevant. If the timeout is present and the query has not completed by
+  // the timeout (counting from the time the StartQuery request has been
+  // received), the server is allowed to cancel the query and report failure
+  // from ReadStream().
+  // Later, when calling ReadStream, the client is expected to set context
+  // deadlines that are not exceeding the deadline implied by this timeout.
+  google.protobuf.Duration query_timeout = 4;
+}
+
+// Request to execute a query.
+message ExecuteQueryRequest {
+  // The dataset that this query is targeted to, in the format
+  // datasources/{datasource}/instances/{instance}/datasets/{dataset}.
+  // The instance and the dataset IDs are URL-encoded.
+  string dataset = 1;
+
+  // The datasource-type-specific parameters that have been provided by
+  // the caller. The parameters must be consistent with these reported by the
+  // connector via GetDataSource.
+  google.protobuf.Struct parameters = 2;
+
+  // The query to execute.
+  DataQuery data_query = 3;
+}
+
+// Response to a query initiation request.
+message StartQueryResponse {
+  // Defines a single relation returned as part of the query response.
+  message ResultSet {
+    option (google.api.resource) = {
+      type: "google.cloud.bigquery.federation.v1alpha1/ResultSet"
+      pattern: "datasources/{datasource}/instances/{instance}/datasets/{dataset}/resultsets/{id}"
+    };
+
+    // Defines a single 'partition' of the result set, that will be returned to
+    // the caller as a point-to-point stream of records.
+    message Stream {
+      option (google.api.resource) = {
+        type: "google.cloud.bigquery.federation.v1alpha1/Stream"
+        pattern: "datasources/{datasource}/instances/{instance}/datasets/{dataset}/resultsets/{resultset}/streams/{id}"
+      };
+
+      // Full stream resource name, in the format:
+      // datasources/{datasource}/instances/{instance}/datasets/{dataset}/resultsets/{resultset}/streams/{id}.
+      // All components but the datasource are URL-encoded.
+      string name = 1;
+
+      // Unique identifier of the stream within the result set, assigned by the
+      // connector at query time.
+      // If the connector needs to encode binary data as part of the stream ID,
+      // using Base64url is recommended.
+      string id = 2;
+    }
+
+    // Full result set resource name, in the format:
+    // datasources/{datasource}/instances/{instance}/datasets/{dataset}/resultsets/{id}.
+    // All components but the datasource are URL-encoded.
+    string name = 1;
+
+    // Opaque identifier of the result set, unique in scope of the queried
+    // dataset, assigned by the connector at query time.
+    // If the connector needs to encode binary data as part of the result set
+    // ID, using Base64url is recommended.
+    string id = 2;
+
+    // Identifies the result set in the residual_query tree. Must be empty
+    // if the residual_query is absent.
+    string label = 3;
+
+    // Identifies all streams of this result set. Must contain at least
+    // one element.
+    repeated Stream streams = 4;
+  }
+
+  // A collection of result sets that, together with the residual_query, define
+  // the result of the query. The elements must have unique labels within the
+  // collection.
+  //
+  // Usually, a query will yield a single result set. We allow the connector
+  // to decline to execute some part of the query, though, and to push it
+  // back to the caller as 'residual query'. If the full query contained joins,
+  // and the connector pushed back on any of them, the residual query has
+  // multiple inputs, which need to be made available to the caller as separate
+  // result sets that subsequently get joined on the caller's end.
+  //
+  // If the residual_query is empty, then result_sets must contain exactly one
+  // element, and it must have an empty label. That result set is interpreted
+  // as the result of the query.
+  // If the residual_query is non-empty, then the result sets must map 1:1
+  // by label to table references that are leaf nodes of the residual query.
+  repeated ResultSet result_sets = 1;
+
+  // If present, the query that must be performed by the requester on the
+  // returned result sets in order to obtain the result as originally requested.
+  // It must be equal to the original query with some of the nodes replaced
+  // by 'source' references corresponding to the returned result_sets.
+  // Intended for data sources that support push down only under certain
+  // conditions that cannot be validated until the exact query is known.
+  DataQuery residual_query = 2;
+
+  // If specified, indicates the maximum level of concurrency that the caller
+  // should observe in the subsequent calls to ReadStream, per query.
+  // If missing, assumed to be equal to the count of all streams of all
+  // result sets (i.e., effectively unbounded).
+  int32 max_concurrency = 3;
+}
+
+// Request to retrieve the schema of a table or a native query results set.
+message ResolveSchemaRequest {
+  // The dataset that this query is targeted to, in the format
+  // datasources/{datasource}/instances/{instance}/datasets/{dataset}.
+  // The instance and dataset IDs are URL-encoded.
+  string dataset = 1;
+
+  // Specifies a table or a raw query to determine the schema of.
+  oneof source {
+    // The name of a table, unique within the dataset.
+    string table = 2;
+
+    // The raw query, specified in the context of the dataset.
+    string native_query = 3;
+
+    // Named Table, used for supported custom namespacing rules.
+    NamedTable named_table = 5;
+  }
+
+  // The datasource-type-specific parameters that have been provided by
+  // the caller. The parameters must be consistent with these reported by the
+  // connector via GetDataSource.
+  google.protobuf.Struct parameters = 4;
+}
+
+// Request to retrieve metadata about the specified data source type.
+message GetDataSourceRequest {
+  // Data source type name, in the format datasources/{id}.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type =
+      "google.cloud.bigquery.federation.v1alpha1/DataSource"
+  ];
+}
